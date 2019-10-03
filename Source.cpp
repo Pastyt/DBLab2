@@ -6,7 +6,6 @@ using namespace std;
 int main()
 {
 	block B;
-	student temp;
 	bucket buc;
 	FILE* DB;
 	DB = fopen("C:\\Games\\Data_Base.bin", "r+");
