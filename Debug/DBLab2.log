@@ -1,6 +1,4 @@
 ﻿  Source.cpp
-C:\Users\pavlo\source\repos\DBLab2\DBLab2\Source.cpp(8,8): warning C4101:  B: неиспользованная локальная переменная
   f.cpp
-C:\Users\pavlo\source\repos\DBLab2\DBLab2\Source.cpp(9,10): warning C4101:  temp: неиспользованная локальная переменная
   Создание кода...
-C:\Users\pavlo\source\repos\DBLab2\DBLab2\f.cpp(65,1): error C1004:  непредвиденное обнаружение конца файла
+  DBLab2.vcxproj -> C:\Users\pavlo\source\repos\DBLab2\Debug\DBLab2.exe

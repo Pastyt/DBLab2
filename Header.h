@@ -22,11 +22,15 @@ struct bucket {
 int myhash(int h);
 int findbucket(FILE*,bucket &b);
 int search(FILE* DB,int& pb, int& pr,block &B,bucket &buc,int id,mode m);
-void changedata(FILE* DB, int& pb, int& pr, block& B); //Not realized
-void del(FILE* DB, int& pb, int& pr, block& B, bucket& buc); //Not realized
+void changedata(FILE* DB, int& pb, int& pr, block& B,bucket &buc);
+void del(FILE* DB, int& pb, int& pr, block& B, bucket& buc);
 void mycout();
 void reccout();
-int mycase(FILE*,bucket&,int m);
+int mycase(FILE*,bucket&,block&,int&,int&,int m);
 int clearfile(FILE* DB);
-void newrecord(FILE* DB, int& pb, int& pr, block& B, bucket& buc); //Not realized
+void newrecord(FILE* DB, int& pb, int& pr, block& B, bucket& buc);
 void showall(FILE* DB, bucket buc);
+void printrecord(student s);
+void deletefind(FILE* DB, block& B, bucket& buc, int& pb,int h);
+void deletelastblock(FILE* DB, block& B, bucket& buc, int& pb, int h);
+void deleteblock(FILE* DB, block& B, bucket& buc, int& pb, int h, int max, int hmax);
