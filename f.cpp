@@ -111,7 +111,7 @@ int search(FILE* DB, int& pb, int& pr, block& B, bucket& buc, int id, mode m) //
 						changedata(DB,pb,pr,B,buc);
 						break;
 					case delet:
-						del(DB, pb, pr, B, buc);
+						deleterec(DB,B,buc,pb,pr,h);
 						break;
 					}
 				}
@@ -174,7 +174,7 @@ int mycase(FILE* DB, bucket &buc,block &B,int &pb,int &pr, int m)
 	case 2:
 		cout << "Write ID for search" << endl;
 		cin >> d;
-		if (search(DB, pb, pr, B, buc, d, searc) == 1)
+		if (search(DB, pb, pr, B, buc, d, searc) == 0)
 			cout << "Record not found";
 		else printrecord(B.s[pr]);
 		break;
@@ -185,6 +185,12 @@ int mycase(FILE* DB, bucket &buc,block &B,int &pb,int &pr, int m)
 		cout << "Write ID for search" << endl;
 		cin >> d;
 		if (search(DB, pb, pr, B, buc, d, change) == 1)
+			cout << "Record not found";
+		break;
+	case 5:
+		cout << "Write ID for search" << endl;
+		cin >> d;
+		if (search(DB, pb, pr, B, buc, d, delet) == 1)
 			cout << "Record not found";
 		break;
 	case 6:
@@ -257,60 +263,39 @@ void printrecord(student s)
 	cout << s.name << " " << s.sur << " " << s.pn << " " << s.id
 		<< " " << s.group;
 }
-void deletefind(FILE* DB, block& B, bucket& buc, int& pb, int h)
+void deleteblockfind(FILE* DB, block& B, bucket& buc, int h)
 {
-	int max = 0;
-	int hmax;
-	for (int i = 0; i < 4; i++)
-	{
-		if (buc.b[i][1] > max) {
-			max = buc.b[i][1];
-			hmax = i;
-		}
-		if (buc.b[i][1] == pb) { //if need to delete last block
-			deletelastblock(DB,B,buc,pb,h);
-			return;
-		}
-	}
-	deleteblock(DB,B,buc,pb,h,max,hmax);
+	int pb;
 }
-void deletelastblock(FILE* DB, block& B, bucket& buc, int& pb, int h)
-{
-	block t;
-	int curp;
-	fseek(DB, sizeof(bucket) + sizeof(block) * buc.b[h][0], SEEK_SET);
-	fread(&t, sizeof(block), 1, DB);
-	curp = buc.b[h][0];
-	while (t.next != pb) {
-		fseek(DB, sizeof(bucket) + sizeof(block) * t.next, SEEK_SET);
-		fread(&t, sizeof(block), 1, DB);
-		curp = t.next;
-	}
-	t.next = -1;
-	buc.b[h][1] = curp;
-	fseek(DB, sizeof(bucket) + sizeof(block) * curp, SEEK_SET);
-	fwrite(&t, sizeof(block), 1, DB);
-	fseek(DB, 0, SEEK_SET);
-	fwrite(&buc, sizeof(bucket), 1, DB);
-	memset(&t, '\0', sizeof(block));
-	fseek(DB, sizeof(bucket) + sizeof(block) * pb, SEEK_SET);
-	fwrite(&t, sizeof(block), 1, DB);
-}
-void deleteblock(FILE* DB, block& B, bucket& buc, int& pb, int h, int max, int hmax)
-{
-	block t,del;
-	int curp;
-	fseek(DB, sizeof(bucket) + sizeof(block) * max, SEEK_SET);
-	fread(&B, sizeof(block), 1, DB);
-	fseek(DB, sizeof(bucket) + sizeof(block) * buc.b[h][0], SEEK_SET);
-	fread(&t, sizeof(block), 1, DB);
-	curp = buc.b[h][0];
-	while (t.next != pb) {
-		fseek(DB, sizeof(bucket) + sizeof(block) * t.next, SEEK_SET);
-		fread(&t, sizeof(block), 1, DB);
-		curp = t.next;
-	}
 
+void deleterec(FILE* DB, block& B, bucket& buc, int& pb, int& pr,int h)
+{
+	if (pr == 0 && B.s[pr + 1].mod == false) {
+		deleteblockfind(DB, B, buc, h);
+		return;
+	}
+	block t;
+	fseek(DB, sizeof(bucket) + sizeof(block) * buc.b[h][0],SEEK_SET);
+	fread(&t, sizeof(block), 1, DB);
+	int curp;
+	while (t.next != -1) {
+		curp = t.next;
+		fseek(DB, sizeof(bucket) + sizeof(block) * t.next, SEEK_SET);
+		fread(&t, sizeof(block), 1, DB);
+	}
+	student stud;
+	for (int i = 0; i < max_block; i++) {
+		if (t.s[i].mod == false) {
+			stud = t.s[i - 1];
+			t.s[i - 1].mod = false;
+			fseek(DB, sizeof(bucket) + sizeof(block) * curp, SEEK_SET);
+			fwrite(&t, sizeof(block), 1, DB);
+			if (i - 1 == 0) deleteblockfind(DB,B,buc,curp);
+		}
+	}
+	B.s[pr] = stud;
+	fseek(DB, sizeof(bucket) + sizeof(block) * pb, SEEK_SET);
+	fwrite(&B, sizeof(block), 1, DB);
 }
 void reccout()
 {
