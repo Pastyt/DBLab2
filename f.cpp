@@ -256,63 +256,88 @@ void printrecord(student s)
 }
 void deleteblockfind(FILE* DB, block& B, bucket& buc, int h)
 {
+	block c;
+	memset(&c, '\0', sizeof(block));
 	fseek(DB, 0, SEEK_END);
 	int max = (ftell(DB) - sizeof(bucket)) / sizeof(block) - 1;
 	if (max == buc.b[h][1]) { // if last block
-		memset(&B, '\0', sizeof(block));
 		fseek(DB, sizeof(bucket) + sizeof(block) * max, SEEK_SET);
-		fwrite(&B, sizeof(block), 1, DB);
+		fwrite(&c, sizeof(block), 1, DB);
+		fseek(DB, sizeof(bucket) + sizeof(block) * buc.b[h][0], SEEK_SET);
+		fread(&B, sizeof(block), 1, DB);
+		int p = buc.b[h][0], newplace = buc.b[h][1];
+		if (B.next != -1) {
+			p = B.next;
+			while (B.next != buc.b[h][1]) { //find block before deleted
+				p = B.next;
+				fseek(DB, sizeof(bucket) + sizeof(block) * B.next, SEEK_SET);
+				fread(&B, sizeof(block), 1, DB);
+
+			}
+			B.next = -1;
+			fseek(DB, sizeof(bucket) + sizeof(block) * p, SEEK_SET);
+			fread(&B, sizeof(block), 1, DB);
+			buc.b[h][1] = p;
+		}
+		else {
+			buc.b[h][0] = -1;
+			buc.b[h][1] = -1;
+		}
+		fseek(DB, 0, SEEK_SET);
+		fwrite(&buc, sizeof(bucket), 1, DB);
 		//need to do it
 		return;
 	}
 	fseek(DB, sizeof(bucket) + sizeof(block) * max, SEEK_SET);
 	fread(&B, sizeof(block), 1, DB);
+	fseek(DB, sizeof(bucket) + sizeof(block) * max, SEEK_SET);
+	fwrite(&c, sizeof(block), 1, DB);
 	int hmax = myhash(B.s[0].id);
 	fseek(DB, sizeof(bucket) + sizeof(block) * buc.b[h][1], SEEK_SET);
-	fwrite(&B, sizeof(block), 1, DB); //write block on delete place;
-	fseek(DB, sizeof(bucket) + sizeof(block) * buc.b[h][0], SEEK_SET);
-	fread(&B, sizeof(block), 1, DB);
-	int p= buc.b[h][0],newplace= buc.b[h][1];
-	if (B.next != -1) {
-		p = B.next;
-		while (B.next != buc.b[h][1]) { //find block before deleted
-			p = B.next;
-			fseek(DB, sizeof(bucket) + sizeof(block) * B.next, SEEK_SET);
-			fread(&B, sizeof(block), 1, DB);
-
-		}
-		B.next = -1;
-		fseek(DB, sizeof(bucket) + sizeof(block) * p, SEEK_SET);
-		fread(&B, sizeof(block), 1, DB);
-	}
-	else {
+	fwrite(&B, sizeof(block), 1, DB); //write max block on delete place;
+	int newplace = buc.b[h][1];
+	if (buc.b[h][0] == buc.b[h][1]) {
 		buc.b[h][0] = -1;
 		buc.b[h][1] = -1;
 	}
+	else {
+		fseek(DB, sizeof(bucket) + sizeof(block) * buc.b[h][0], SEEK_SET);
+		fread(&B, sizeof(block), 1, DB);
+		int	p = B.next;
+			while (B.next != buc.b[h][1]) { //find block before deleted
+				p = B.next;
+				fseek(DB, sizeof(bucket) + sizeof(block) * B.next, SEEK_SET);
+				fread(&B, sizeof(block), 1, DB);
+
+			}
+			B.next = -1;
+			fseek(DB, sizeof(bucket) + sizeof(block) * p, SEEK_SET);
+			fread(&B, sizeof(block), 1, DB);
+			buc.b[h][1] = p;
+		
+	}
+	fseek(DB, 0, SEEK_SET);
+	fwrite(&buc, sizeof(bucket), 1, DB);
 	fseek(DB, sizeof(bucket) + sizeof(block) * buc.b[hmax][0], SEEK_SET);
 	fread(&B, sizeof(block), 1, DB);
-	int pmax= buc.b[hmax][0];
-	if (B.next != -1) { // find max block chain
-		while (B.next != buc.b[hmax][1]) { 
-			pmax = B.next;
-			fseek(DB, sizeof(bucket) + sizeof(block) * B.next, SEEK_SET);
-			fread(&B, sizeof(block), 1, DB);
-		}
-		B.next = newplace;
+	max = buc.b[hmax][0];
+	if (buc.b[hmax][0] == buc.b[hmax][1]) {
+		buc.b[hmax][0] = newplace;
+		buc.b[hmax][1] = newplace;
 	}
 	else {
-		buc.b[hmax][0] = newplace;
-		pmax = newplace;
+		if (B.next != -1) { // find max block chain
+			while (B.next != buc.b[hmax][1]) {
+				max = B.next;
+				fseek(DB, sizeof(bucket) + sizeof(block) * B.next, SEEK_SET);
+				fread(&B, sizeof(block), 1, DB);
+			}
+			B.next = newplace;
+			buc.b[hmax][1] = newplace;
+		}
 	}
-	
-	buc.b[hmax][1] = newplace;
 	fseek(DB, 0, SEEK_SET);
-	fwrite(&buc, sizeof(bucket), 1, DB);// Write data in memory
-	fseek(DB, sizeof(bucket) + sizeof(block) * pmax, SEEK_SET);
-	fwrite(&B, sizeof(block), 1, DB);
-	fseek(DB, sizeof(bucket) + sizeof(block) * max, SEEK_SET);
-	memset(&B, '\0', sizeof(block));
-	fwrite(&B, sizeof(block), 1, DB);
+	fwrite(&buc, sizeof(bucket), 1, DB);// Write bucket in memory
 }
 
 void showbucket(bucket buc)
@@ -327,7 +352,16 @@ void showbucket(bucket buc)
 void deleterec(FILE* DB, block& B, bucket& buc, int& pb, int& pr, int h)
 {
 	if (pr == 0 && B.s[pr + 1].mod == false) {
+		fseek(DB, sizeof(bucket) + sizeof(block) * pb, SEEK_SET);
+		B.s[pr].mod = false;
+		fwrite(&B, sizeof(block), 1, DB);
 		deleteblockfind(DB, B, buc, h);
+		return;
+	}
+	if (B.s[pr + 1].mod == false ||(pr==5 && pb==buc.b[h][1])) { //if need to delete last
+		B.s[pr].mod = false;									//record
+		fseek(DB, sizeof(bucket) + sizeof(block) * pb, SEEK_SET);
+		fwrite(&B, sizeof(block), 1, DB);
 		return;
 	}
 	block t;
